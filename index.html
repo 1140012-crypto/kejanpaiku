@@ -1,0 +1,2659 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>半透明多格拼圖與數學研究工具</title>
+
+<style>
+:root {
+    --bg-color: #f8f9fa;
+    --board-bg: #ffffff;
+    --grid-line: #333333;
+}
+* { box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                 Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg-color);
+    color: #2b2b2b;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+}
+h1 {
+    margin: 0 0 8px;
+    font-size: 26px;
+    text-align: center;
+}
+.subtitle {
+    color: #666;
+    margin-bottom: 20px;
+    font-size: 14px;
+    text-align: center;
+    max-width: 800px;
+    line-height: 1.7;
+}
+.game-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 25px;
+    justify-content: center;
+    align-items: flex-start;
+    max-width: 1250px;
+    width: 100%;
+}
+.panel {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 340px;
+    max-width: 100%;
+}
+.board-panel {
+    width: 650px;
+    flex-grow: 1;
+    min-width: 0;
+}
+.controls {
+    margin-bottom: 15px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+}
+.custom-size-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #f1f5f9;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+}
+.custom-size-group input {
+    width: 48px;
+    padding: 4px 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-align: center;
+}
+select, button {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    background: white;
+}
+button:hover, select:hover { background: #edf2f7; }
+button:disabled { opacity: .5; cursor: default; }
+.btn-primary { background: #2b6cb0; color: white; border: none; }
+.btn-primary:hover { background: #2c5282; }
+.btn-mode-3d { background: #6b46c1; color: white; border: none; }
+.btn-mode-3d:hover { background: #553c9a; }
+.btn-solve { background: #2f855a; color: white; border: none; }
+.btn-solve:hover { background: #276749; }
+.btn-anim { background: #dd6b20; color: white; border: none; }
+.btn-anim:hover { background: #c05621; }
+.btn-danger { background: #e53e3e; color: white; border: none; }
+.btn-danger:hover { background: #c53030; }
+.palette-title-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 8px;
+}
+.palette-title { font-weight: bold; font-size: 14px; color: #4a5568; }
+.palette-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #edf2f7;
+    padding: 6px;
+    border-radius: 8px;
+    background: #fafafa;
+}
+.custom-section {
+    max-height: 160px;
+    background: #f0fff4;
+    border-color: #c6f6d5;
+}
+.domino-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    background: white;
+}
+.disabled-type { opacity: .45; background: #edf2f7; }
+.domino-option.selected {
+    border-color: #3182ce;
+    background: #ebf8ff;
+}
+.piece-checkbox { width: 16px; height: 16px; cursor: pointer; }
+.domino-preview-canvas { width: 38px; height: 38px; flex-shrink: 0; }
+.domino-desc { font-size: 11px; line-height: 1.5; flex-grow: 1; }
+.domino-desc strong { display: block; font-size: 12px; }
+.btn-delete-piece {
+    padding: 3px 7px;
+    font-size: 11px;
+    background: #e53e3e;
+    color: white;
+    border: none;
+}
+.custom-creator-box {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 2px dashed #cbd5e1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.creator-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 28px);
+    gap: 4px;
+    margin: 8px 0;
+    background: #e2e8f0;
+    padding: 5px;
+    border-radius: 8px;
+}
+.creator-cell {
+    width: 28px;
+    height: 28px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.board-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 100%;
+    overflow-x: auto;
+    margin-top: 15px;
+}
+.board-container {
+    background: white;
+    border: 2px solid #333;
+    border-radius: 8px;
+    overflow: hidden;
+}
+#game-canvas { display: block; touch-action: none; }
+.mode-3d-cursor { cursor: grab; }
+.mode-3d-cursor:active { cursor: grabbing; }
+.rotation-badge {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #4a5568;
+    background: #edf2f7;
+    padding: 6px 14px;
+    border-radius: 12px;
+}
+.status-msg {
+    margin-top: 15px;
+    padding: 14px 18px;
+    border-radius: 8px;
+    width: 100%;
+    line-height: 1.6;
+}
+.status-msg.win { background: #c6f6d5; color: #22543d; }
+.status-msg.error { background: #fff5f5; color: #9b2c2c; }
+.status-msg.info { background: #e2e8f0; color: #2d3748; }
+.key-hint {
+    background: #e2e8f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+.info-box {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px;
+    border: 1px solid #cbd5e0;
+    border-radius: 8px;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+}
+#solution-steps { display: none; background: #f7fafc; }
+#capacity-formula { background: #fffaf0; }
+.batch-box {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #bee3f8;
+    border-radius: 8px;
+    background: #edf8ff;
+}
+.batch-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 8px 0;
+    font-size: 13px;
+}
+.batch-result {
+    margin: 8px 0;
+    padding: 8px;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    background: white;
+    overflow-wrap: anywhere;
+}
+details { margin-top: 8px; }
+summary { cursor: pointer; font-weight: 600; }
+.formula-lines {
+    padding: 8px;
+    background: white;
+    border-radius: 6px;
+}
+@media (max-width: 600px) {
+    body { padding: 10px; }
+    h1 { font-size: 21px; }
+    .panel { padding: 12px; }
+}
+</style>
+</head>
+
+<body>
+<h1>半透明多格拼圖與數學研究工具</h1>
+
+<div class="subtitle">
+    <b>容量規則：</b>
+    藍／紫＝1 格，灰＝1/2 格，橘＝1/3 格。<br>
+    自動求解要求每種勾選骨牌至少使用一張；
+    搜尋上限為 2,000,000 個節點。<br>
+    3D 模式可按住滑鼠左鍵拖曳，旋轉棋盤視角。
+</div>
+
+<div class="game-container">
+
+    <div class="panel">
+        <div class="palette-title-box">
+            <span class="palette-title">預設骨牌</span>
+            <div>
+                <button onclick="toggleAllPieces(true)">全選</button>
+                <button onclick="toggleAllPieces(false)">全不選</button>
+            </div>
+        </div>
+
+        <div class="palette-options" id="preset-options-list"></div>
+
+        <div class="palette-title-box" style="margin-top:12px">
+            <span class="palette-title">我的自訂骨牌</span>
+        </div>
+
+        <div class="palette-options custom-section" id="custom-options-list">
+            <div id="custom-empty-msg"
+                 style="font-size:12px;color:#718096;text-align:center;padding:12px">
+                尚未新增自訂骨牌，請在下方繪製。
+            </div>
+        </div>
+
+        <div class="custom-creator-box">
+            <div class="palette-title">繪製新骨牌</div>
+
+            <div style="font-size:11px;color:#718096;text-align:center;margin-top:5px">
+                點擊格子切換顏色：<br>
+                空白 → 藍 → 灰 → 橘 → 紫
+            </div>
+
+            <div class="creator-grid" id="creator-grid"></div>
+
+            <div style="display:flex;gap:5px;width:100%;margin-bottom:6px">
+                <input id="custom-piece-name"
+                       value="自訂骨牌"
+                       placeholder="骨牌名稱"
+                       style="min-width:0;flex:1;padding:6px">
+                <button onclick="resetCreatorGrid()">清空</button>
+            </div>
+
+            <button class="btn-primary"
+                    onclick="saveCustomPiece()"
+                    style="width:100%">
+                新增至自訂骨牌
+            </button>
+        </div>
+
+        <div style="margin-top:12px;width:100%;text-align:center">
+            <p style="font-size:12px;color:#718096;line-height:1.8">
+                旋轉：<span class="key-hint">R</span>／
+                <span class="key-hint">Space</span><br>
+                鏡像：<span class="key-hint">F</span><br>
+                新增禁置格：<span class="key-hint">↑</span><br>
+                取消禁置格：<span class="key-hint">↓</span><br>
+                左鍵放置，右鍵移除；空白處右鍵旋轉。
+            </p>
+
+            <button onclick="rotatePieceAction()" style="width:100%">
+                旋轉骨牌：
+                <span id="orient-label">0°</span>
+            </button>
+
+            <button onclick="toggleFlipAction()"
+                    style="width:100%;margin-top:6px">
+                鏡像：
+                <span id="flip-label">正常</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="panel board-panel">
+
+        <div class="controls">
+            <button class="btn-mode-3d"
+                    id="btn-toggle-3d"
+                    onclick="toggle3DMode()">
+                切換 3D 模式
+            </button>
+
+            <select id="level-select" onchange="changeLevel()">
+                <option value="6x6_classic">
+                    6×6：左上、右下禁置
+                </option>
+                <option value="4x4_empty">
+                    4×4：完整棋盤
+                </option>
+                <option value="8x8_corners">
+                    8×8：左上、右下禁置
+                </option>
+                <option value="10x10_corners">
+                    10×10：左上、右下禁置
+                </option>
+                <option value="custom" disabled>
+                    自訂棋盤
+                </option>
+            </select>
+
+            <div class="custom-size-group">
+                <label>自訂：</label>
+                <input type="number"
+                       id="custom-rows"
+                       min="2" max="25" value="6">
+                <span>×</span>
+                <input type="number"
+                       id="custom-cols"
+                       min="2" max="25" value="6">
+                <button class="btn-primary" onclick="applyCustomSize()">
+                    建立
+                </button>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn-solve" onclick="autoSolve(false)">
+                一鍵解答
+            </button>
+            <button class="btn-anim" onclick="playAnimation()">
+                動畫播放
+            </button>
+            <button onclick="stepPrev()">◀ 上一步</button>
+            <button onclick="stepNext()">下一步 ▶</button>
+            <button onclick="pauseAnimation()">暫停</button>
+            <button onclick="undoLastMove()">復原</button>
+            <button class="btn-danger" onclick="resetBoard()">重置</button>
+        </div>
+
+        <div class="batch-box">
+            <b>⚡ 神速運算模式：同時求解多種棋盤</b>
+
+            <div class="batch-options">
+                <label>
+                    <input type="checkbox"
+                           class="batch-board" value="6" checked>
+                    6×6
+                </label>
+                <label>
+                    <input type="checkbox"
+                           class="batch-board" value="8" checked>
+                    8×8
+                </label>
+                <label>
+                    <input type="checkbox"
+                           class="batch-board" value="10" checked>
+                    10×10
+                </label>
+            </div>
+
+            <button class="btn-primary"
+                    id="batch-solve-button"
+                    onclick="solveMultipleBoards()">
+                同時運算
+            </button>
+
+            <button id="batch-stop-button"
+                    onclick="stopMultipleBoards()"
+                    disabled>
+                停止
+            </button>
+
+            <div id="batch-results"
+                 aria-live="polite"
+                 style="margin-top:8px;font-size:13px"></div>
+        </div>
+
+        <div class="board-wrapper">
+            <div class="board-container">
+                <canvas id="game-canvas"></canvas>
+            </div>
+
+            <div class="rotation-badge">
+                模式：
+                <span id="view-mode-text">平面 2D</span>
+                ｜角度：
+                <span id="current-orient-text">0°</span>
+                ｜鏡像：
+                <span id="current-flip-text">無</span>
+            </div>
+        </div>
+
+        <div class="status-msg info" id="status-msg">
+            點擊一鍵解答即可開始搜尋。
+        </div>
+
+        <div class="info-box" id="solution-steps"></div>
+        <div class="info-box" id="capacity-formula"></div>
+
+    </div>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- 骨牌定義 ---------- */
+
+const PIECE_DEFINITIONS = {
+    L_ORG_BLU_ORG: {
+        name: "L 型 (3,1,3)",
+        shape: [
+            {r:0,c:0,type:"orange"},
+            {r:1,c:0,type:"blue"},
+            {r:1,c:1,type:"orange"}
+        ]
+    },
+    L_ALL_ORANGE: {
+        name: "L 型 (3,3,3)",
+        shape: [
+            {r:0,c:0,type:"orange"},
+            {r:1,c:0,type:"orange"},
+            {r:1,c:1,type:"orange"}
+        ]
+    },
+    L_BLU_ORG_BLU: {
+        name: "L 型 (1,3,1)",
+        shape: [
+            {r:0,c:0,type:"blue"},
+            {r:1,c:0,type:"orange"},
+            {r:1,c:1,type:"blue"}
+        ]
+    },
+    L_ALL_BLUE: {
+        name: "L 型 (1,1,1)",
+        shape: [
+            {r:0,c:0,type:"blue"},
+            {r:1,c:0,type:"blue"},
+            {r:1,c:1,type:"blue"}
+        ]
+    },
+    L_ORG_ORG_BLU: {
+        name: "L 型 (3,3,1)",
+        shape: [
+            {r:0,c:0,type:"orange"},
+            {r:1,c:0,type:"orange"},
+            {r:1,c:1,type:"blue"}
+        ]
+    },
+    L_ORG_BLU_BLU: {
+        name: "L 型 (3,1,1)",
+        shape: [
+            {r:0,c:0,type:"orange"},
+            {r:1,c:0,type:"blue"},
+            {r:1,c:1,type:"blue"}
+        ]
+    },
+    T_SHAPE: {
+        name: "T 型：灰、藍、灰、藍",
+        shape: [
+            {r:0,c:0,type:"gray"},
+            {r:0,c:1,type:"blue"},
+            {r:0,c:2,type:"gray"},
+            {r:1,c:1,type:"blue"}
+        ]
+    },
+    DOUBLE_GRAY: {
+        name: "雙灰骨牌 (1/2,1/2)",
+        shape: [
+            {r:0,c:0,type:"gray"},
+            {r:1,c:0,type:"gray"}
+        ]
+    },
+    SINGLE_GRAY: {
+        name: "雙藍骨牌 (1,1)",
+        shape: [
+            {r:0,c:0,type:"blue"},
+            {r:1,c:0,type:"blue_half"}
+        ]
+    },
+    SOLID_PURPLE: {
+        name: "實心骨牌 (1,1)",
+        shape: [
+            {r:0,c:0,type:"purple"},
+            {r:1,c:0,type:"purple"}
+        ]
+    }
+};
+
+/* 用整數單位計算容量：一格＝6 單位。 */
+const TYPE_UNITS = {
+    blue:6,
+    blue_half:6,
+    purple:6,
+    gray:3,
+    orange:2
+};
+
+const COLOR_MAP = {
+    blue:"#3B728D",
+    blue_half:"#3B728D",
+    purple:"#8E3B89",
+    gray:"#8C8C8C",
+    orange:"#EA580C"
+};
+
+const COLOR_3D = {
+    blue:{top:"#5A9DC4",left:"#3B728D",right:"#264E63"},
+    purple:{top:"#B85CB3",left:"#8E3B89",right:"#63255F"},
+    gray:{top:"#B0B0B0",left:"#8C8C8C",right:"#616161"},
+    orange:{top:"#FF7D3B",left:"#EA580C",right:"#A83B04"},
+    error:{top:"#FF8080",left:"#D90429",right:"#900018"}
+};
+
+const pieceEnabled = {};
+Object.keys(PIECE_DEFINITIONS).forEach(key => {
+    pieceEnabled[key] = true;
+});
+
+const CELL_TYPES = ["empty","blue","gray","orange","purple"];
+let creatorGridData = Array.from(
+    {length:4},
+    () => Array(4).fill("empty")
+);
+let customCounter = 1;
+
+let CELL_SIZE = 65;
+let gridRows = 6;
+let gridCols = 6;
+let forbiddenCells = new Set();
+
+let selectedType = "L_ORG_BLU_ORG";
+let currentRotation = 0;
+let isFlipped = false;
+
+let placedPieces = [];
+let hoveredCell = null;
+let computedSolutionSteps = [];
+let currentSolutionIndex = 0;
+let animTimer = null;
+
+let is3DMode = false;
+let viewAngleZ = Math.PI / 4;
+let viewAngleX = Math.PI / 5;
+let isDragging3D = false;
+let dragStartMouse = {x:0,y:0};
+let dragMovedDistance = 0;
+
+let batchWorkers = [];
+let batchResults = {};
+let batchRunId = 0;
+let batchWorkerUrl = null;
+
+const canvas = document.getElementById("game-canvas");
+const ctx = canvas.getContext("2d");
+
+function elementId(key) {
+    return key.toLowerCase().replace(/_/g,"-");
+}
+
+function escapeHtml(text) {
+    return String(text).replace(/[&<>"']/g, ch => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+    })[ch]);
+}
+
+/* ---------- 骨牌選單 ---------- */
+
+function addPieceOption(key, container, allowDelete = false) {
+    const definition = PIECE_DEFINITIONS[key];
+    const id = elementId(key);
+    const option = document.createElement("div");
+    option.className = "domino-option";
+    option.id = "opt-" + id;
+
+    option.innerHTML = `
+        <input type="checkbox"
+               class="piece-checkbox"
+               id="chk-${id}" checked>
+        <canvas class="domino-preview-canvas"
+                id="prev-${id}"></canvas>
+        <div class="domino-desc">
+            <strong>${escapeHtml(definition.name)}</strong>
+            ${definition.shape.length} 個色塊
+        </div>
+    `;
+
+    option.onclick = () => selectPieceType(key);
+
+    option.querySelector("input").onclick = event => {
+        togglePieceEnable(event,key);
+    };
+
+    if (allowDelete) {
+        const button = document.createElement("button");
+        button.className = "btn-delete-piece";
+        button.textContent = "刪除";
+        button.onclick = event => deleteCustomPiece(event,key);
+        option.appendChild(button);
+    }
+
+    container.appendChild(option);
+}
+
+function initPresetOptions() {
+    const list = document.getElementById("preset-options-list");
+    list.replaceChildren();
+
+    Object.keys(PIECE_DEFINITIONS)
+        .filter(key => !PIECE_DEFINITIONS[key].isCustom)
+        .forEach(key => addPieceOption(key,list));
+
+    document.getElementById(
+        "opt-" + elementId(selectedType)
+    ).classList.add("selected");
+}
+
+function togglePieceEnable(event,type) {
+    event.stopPropagation();
+
+    const id = elementId(type);
+    const checkbox = document.getElementById("chk-" + id);
+    pieceEnabled[type] = checkbox.checked;
+
+    document.getElementById("opt-" + id)
+        .classList.toggle("disabled-type",!checkbox.checked);
+
+    pauseAnimation();
+    computedSolutionSteps = [];
+    document.getElementById("solution-steps").style.display = "none";
+    render();
+}
+
+function toggleAllPieces(enable) {
+    Object.keys(PIECE_DEFINITIONS).forEach(type => {
+        pieceEnabled[type] = enable;
+        const id = elementId(type);
+        const checkbox = document.getElementById("chk-" + id);
+        const option = document.getElementById("opt-" + id);
+
+        if (checkbox) checkbox.checked = enable;
+        if (option) {
+            option.classList.toggle("disabled-type",!enable);
+        }
+    });
+
+    pauseAnimation();
+    computedSolutionSteps = [];
+    document.getElementById("solution-steps").style.display = "none";
+    render();
+}
+
+function selectPieceType(type) {
+    selectedType = type;
+
+    document.querySelectorAll(".domino-option").forEach(option => {
+        option.classList.remove("selected");
+    });
+
+    const option = document.getElementById("opt-" + elementId(type));
+    if (option) option.classList.add("selected");
+
+    render();
+}
+
+/* ---------- 自訂骨牌 ---------- */
+
+function initCreatorGrid() {
+    const container = document.getElementById("creator-grid");
+    container.replaceChildren();
+
+    for (let r=0;r<4;r++) {
+        for (let c=0;c<4;c++) {
+            const cell = document.createElement("div");
+            cell.className = "creator-cell";
+            cell.style.backgroundColor =
+                COLOR_MAP[creatorGridData[r][c]] || "#ffffff";
+
+            cell.onclick = () => {
+                const current = creatorGridData[r][c];
+                const next = CELL_TYPES[
+                    (CELL_TYPES.indexOf(current)+1) % CELL_TYPES.length
+                ];
+                creatorGridData[r][c] = next;
+                cell.style.backgroundColor =
+                    COLOR_MAP[next] || "#ffffff";
+            };
+
+            container.appendChild(cell);
+        }
+    }
+}
+
+function resetCreatorGrid() {
+    creatorGridData = Array.from(
+        {length:4},
+        () => Array(4).fill("empty")
+    );
+    initCreatorGrid();
+}
+
+function saveCustomPiece() {
+    const cells = [];
+
+    for (let r=0;r<4;r++) {
+        for (let c=0;c<4;c++) {
+            const type = creatorGridData[r][c];
+            if (type !== "empty") cells.push({r,c,type});
+        }
+    }
+
+    if (!cells.length) {
+        updateStatus("請先繪製至少一格骨牌。","error");
+        return;
+    }
+
+    const minR = Math.min(...cells.map(cell => cell.r));
+    const minC = Math.min(...cells.map(cell => cell.c));
+    const key = "CUSTOM_" + customCounter++;
+
+    const name = document.getElementById("custom-piece-name")
+        .value.trim() || "自訂骨牌";
+
+    PIECE_DEFINITIONS[key] = {
+        name,
+        isCustom:true,
+        shape:cells.map(cell => ({
+            r:cell.r-minR,
+            c:cell.c-minC,
+            type:cell.type
+        }))
+    };
+
+    pieceEnabled[key] = true;
+
+    document.getElementById("custom-empty-msg").style.display = "none";
+
+    addPieceOption(
+        key,
+        document.getElementById("custom-options-list"),
+        true
+    );
+
+    computedSolutionSteps = [];
+    renderPreviews();
+    selectPieceType(key);
+    resetCreatorGrid();
+    updateStatus("已新增自訂骨牌。","info");
+}
+
+function deleteCustomPiece(event,key) {
+    event.stopPropagation();
+    stopMultipleBoards();
+    pauseAnimation();
+
+    placedPieces = placedPieces.filter(piece => piece.type !== key);
+    computedSolutionSteps = [];
+    delete PIECE_DEFINITIONS[key];
+    delete pieceEnabled[key];
+
+    const option = document.getElementById("opt-" + elementId(key));
+    if (option) option.remove();
+
+    if (selectedType === key) selectedType = "L_ORG_BLU_ORG";
+
+    const remaining = document.querySelectorAll(
+        "#custom-options-list .domino-option"
+    ).length;
+
+    document.getElementById("custom-empty-msg").style.display =
+        remaining ? "none" : "block";
+
+    document.getElementById("solution-steps").style.display = "none";
+    selectPieceType(selectedType);
+    updateStatus("已刪除自訂骨牌。","info");
+}
+
+/* ---------- 旋轉與鏡像 ---------- */
+
+function getTransformedCells(pieceTypeKey,rotation,flipped) {
+    const definition = PIECE_DEFINITIONS[pieceTypeKey];
+    if (!definition) return [];
+
+    const transformed = definition.shape.map(cell => {
+        const r = cell.r;
+        const c = flipped ? -cell.c : cell.c;
+        let dr = r;
+        let dc = c;
+
+        if (rotation === 1) {
+            dr = c;
+            dc = -r;
+        } else if (rotation === 2) {
+            dr = -r;
+            dc = -c;
+        } else if (rotation === 3) {
+            dr = -c;
+            dc = r;
+        }
+
+        return {dr,dc,type:cell.type};
+    });
+
+    const minR = Math.min(...transformed.map(cell => cell.dr));
+    const minC = Math.min(...transformed.map(cell => cell.dc));
+
+    return transformed.map(cell => ({
+        dr:cell.dr-minR,
+        dc:cell.dc-minC,
+        type:cell.type
+    }));
+}
+
+function rotatePieceAction() {
+    currentRotation = (currentRotation+1) % 4;
+    const label = currentRotation*90 + "°";
+    document.getElementById("orient-label").textContent = label;
+    document.getElementById("current-orient-text").textContent = label;
+    renderPreviews();
+    render();
+}
+
+function toggleFlipAction() {
+    isFlipped = !isFlipped;
+
+    document.getElementById("flip-label").textContent =
+        isFlipped ? "反轉" : "正常";
+
+    document.getElementById("current-flip-text").textContent =
+        isFlipped ? "有" : "無";
+
+    renderPreviews();
+    render();
+}
+
+function renderPreviews() {
+    Object.keys(PIECE_DEFINITIONS).forEach(key => {
+        const preview = document.getElementById(
+            "prev-" + elementId(key)
+        );
+        if (!preview) return;
+
+        preview.width = preview.height = 38;
+        const context = preview.getContext("2d");
+        context.clearRect(0,0,38,38);
+
+        const cells = getTransformedCells(
+            key,currentRotation,isFlipped
+        );
+
+        const rows = Math.max(...cells.map(cell => cell.dr))+1;
+        const cols = Math.max(...cells.map(cell => cell.dc))+1;
+        const size = Math.min(
+            Math.floor(32 / Math.max(rows,cols)),12
+        );
+
+        const x0 = (38-cols*size)/2;
+        const y0 = (38-rows*size)/2;
+
+        cells.forEach(cell => {
+            context.fillStyle = COLOR_MAP[cell.type];
+            context.fillRect(
+                x0+cell.dc*size,
+                y0+cell.dr*size,
+                size-1,
+                size-1
+            );
+        });
+    });
+}
+
+/* ---------- 棋盤設定 ---------- */
+
+function changeLevel() {
+    const level = document.getElementById("level-select").value;
+    if (level === "custom") return;
+
+    pauseAnimation();
+    forbiddenCells.clear();
+
+    if (level === "4x4_empty") {
+        gridRows = gridCols = 4;
+    } else {
+        const size = level === "6x6_classic" ? 6 :
+                     level === "8x8_corners" ? 8 : 10;
+
+        gridRows = gridCols = size;
+        forbiddenCells.add("0,0");
+        forbiddenCells.add((size-1)+","+(size-1));
+    }
+
+    document.getElementById("custom-rows").value = gridRows;
+    document.getElementById("custom-cols").value = gridCols;
+
+    resizeCanvas();
+    resetBoard();
+    updateStatus("已載入棋盤。","info");
+}
+
+function applyCustomSize() {
+    const rInput = document.getElementById("custom-rows");
+    const cInput = document.getElementById("custom-cols");
+
+    let rows = parseInt(rInput.value,10);
+    let cols = parseInt(cInput.value,10);
+
+    if (!Number.isInteger(rows) || !Number.isInteger(cols) ||
+        rows<2 || cols<2) {
+        updateStatus("棋盤長寬至少為 2。","error");
+        return;
+    }
+
+    gridRows = Math.min(rows,25);
+    gridCols = Math.min(cols,25);
+    rInput.value = gridRows;
+    cInput.value = gridCols;
+
+    forbiddenCells.clear();
+    document.getElementById("level-select").value = "custom";
+    resizeCanvas();
+    resetBoard();
+
+    updateStatus(
+        `已建立 ${gridRows}×${gridCols} 自訂棋盤。`,
+        "info"
+    );
+}
+
+function resizeCanvas() {
+    const maxDimension = Math.max(gridRows,gridCols);
+
+    if (is3DMode) {
+        CELL_SIZE = Math.max(
+            20,Math.min(40,Math.floor(320/maxDimension))
+        );
+
+        const dimension = Math.max(
+            500,Math.floor(maxDimension*CELL_SIZE*2.2)
+        );
+        canvas.width = canvas.height = dimension;
+    } else {
+        CELL_SIZE = Math.max(
+            22,Math.min(65,Math.floor(480/maxDimension))
+        );
+        canvas.width = gridCols*CELL_SIZE;
+        canvas.height = gridRows*CELL_SIZE;
+    }
+}
+
+function resetBoard() {
+    pauseAnimation();
+    placedPieces = [];
+    computedSolutionSteps = [];
+    currentSolutionIndex = 0;
+    document.getElementById("solution-steps").style.display = "none";
+    render();
+    updateStatus("棋盤已重置。","info");
+}
+
+function undoLastMove() {
+    pauseAnimation();
+
+    if (placedPieces.length) {
+        placedPieces.pop();
+        computedSolutionSteps = [];
+        currentSolutionIndex = 0;
+        document.getElementById("solution-steps").style.display = "none";
+        render();
+        checkWinCondition();
+    }
+}
+
+/* ---------- 自動求解 ---------- */
+
+function calculateSolution() {
+    const activeTypes = Object.keys(PIECE_DEFINITIONS)
+        .filter(key => pieceEnabled[key]);
+
+    if (!activeTypes.length) {
+        return {
+            success:false,
+            reason:"請至少勾選一種可使用的骨牌。"
+        };
+    }
+
+    const validCount = gridRows*gridCols-forbiddenCells.size;
+
+    if (!validCount) {
+        return {
+            success:false,
+            reason:"棋盤沒有可使用的格子。"
+        };
+    }
+
+    const orientations = [];
+
+    activeTypes.forEach(type => {
+        const seen = new Set();
+
+        for (let rotation=0;rotation<4;rotation++) {
+            for (const flipped of [false,true]) {
+                const cells = getTransformedCells(
+                    type,rotation,flipped
+                );
+
+                const key = JSON.stringify(
+                    cells.slice().sort(
+                        (a,b) => a.dr-b.dr ||
+                                 a.dc-b.dc ||
+                                 a.type.localeCompare(b.type)
+                    )
+                );
+
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    orientations.push({
+                        type,rotation,flipped,cells
+                    });
+                }
+            }
+        }
+    });
+
+    const boardUnits = Array.from(
+        {length:gridRows},
+        () => Array(gridCols).fill(0)
+    );
+
+    const boardTypes = Array.from(
+        {length:gridRows},
+        () => Array.from({length:gridCols},() => [])
+    );
+
+    const counts = Object.fromEntries(
+        activeTypes.map(type => [type,0])
+    );
+
+    const sizes = Object.fromEntries(
+        activeTypes.map(type => [
+            type,
+            PIECE_DEFINITIONS[type].shape.reduce(
+                (sum,cell) => sum+(TYPE_UNITS[cell.type] || 6),
+                0
+            )
+        ])
+    );
+
+    const targetUnits = validCount*6;
+    const allSizes = activeTypes.map(type => sizes[type]);
+
+    function gcd(a,b) {
+        return b === 0 ? a : gcd(b,a%b);
+    }
+
+    const divisor = allSizes.reduce((a,b) => gcd(a,b));
+    const minimum = allSizes.reduce((a,b) => a+b,0);
+
+    if (minimum>targetUnits) {
+        return {
+            success:false,
+            reason:
+                `每種骨牌至少一張需要 ${minimum}/6 格容量，`+
+                `超過棋盤的 ${targetUnits}/6 格容量，因此無解。`
+        };
+    }
+
+    if (targetUnits%divisor !== 0) {
+        return {
+            success:false,
+            reason:
+                `容量最大公因數為 ${divisor} 單位，`+
+                `棋盤需求 ${targetUnits} 單位無法被它整除，`+
+                `因此無解。一格等於 6 單位。`
+        };
+    }
+
+    let nodes = 0;
+    const MAX_STEPS = 2000000;
+    let hitLimit = false;
+    let remainingUnits = targetUnits;
+    const solution = [];
+
+    function nextTarget() {
+        for (let r=0;r<gridRows;r++) {
+            for (let c=0;c<gridCols;c++) {
+                if (!forbiddenCells.has(r+","+c) &&
+                    boardUnits[r][c]<6) {
+                    return {r,c};
+                }
+            }
+        }
+        return null;
+    }
+
+    function canPlace(piece,r,c) {
+        for (const cell of piece.cells) {
+            const tr = r+cell.dr;
+            const tc = c+cell.dc;
+
+            if (tr<0 || tc<0 ||
+                tr>=gridRows || tc>=gridCols ||
+                forbiddenCells.has(tr+","+tc)) {
+                return false;
+            }
+
+            const added = TYPE_UNITS[cell.type] || 6;
+            if (boardUnits[tr][tc]+added>6) return false;
+
+            const currentTypes = boardTypes[tr][tc];
+
+            if (currentTypes.length) {
+                const first = currentTypes[0];
+
+                if (cell.type === "blue" ||
+                    cell.type === "blue_half" ||
+                    cell.type === "purple") {
+                    return false;
+                }
+
+                if (first === "gray" && cell.type !== "gray") {
+                    return false;
+                }
+
+                if (first === "orange" && cell.type !== "orange") {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    function apply(piece,r,c,add) {
+        const direction = add ? 1 : -1;
+
+        for (const cell of piece.cells) {
+            const tr = r+cell.dr;
+            const tc = c+cell.dc;
+            const units = TYPE_UNITS[cell.type] || 6;
+
+            boardUnits[tr][tc] += direction*units;
+
+            if (add) boardTypes[tr][tc].push(cell.type);
+            else boardTypes[tr][tc].pop();
+        }
+
+        remainingUnits -= direction*sizes[piece.type];
+    }
+
+    function search() {
+        if (nodes>=MAX_STEPS) {
+            hitLimit = true;
+            return false;
+        }
+        nodes++;
+
+        const target = nextTarget();
+
+        if (!target) {
+            return activeTypes.every(type => counts[type]>0);
+        }
+
+        const required = activeTypes.reduce(
+            (sum,type) => sum+(counts[type] === 0 ? sizes[type] : 0),
+            0
+        );
+
+        if (required>remainingUnits) return false;
+
+        for (const piece of orientations) {
+            for (const cell of piece.cells) {
+                const r = target.r-cell.dr;
+                const c = target.c-cell.dc;
+
+                if (!canPlace(piece,r,c)) continue;
+
+                apply(piece,r,c,true);
+                counts[piece.type]++;
+
+                solution.push({
+                    id:solution.length+1,
+                    type:piece.type,
+                    r,c,
+                    rotation:piece.rotation,
+                    flipped:piece.flipped,
+                    cells:piece.cells
+                });
+
+                if (search()) return true;
+
+                solution.pop();
+                counts[piece.type]--;
+                apply(piece,r,c,false);
+
+                if (hitLimit) return false;
+            }
+        }
+
+        return false;
+    }
+
+    if (search()) {
+        return {
+            success:true,
+            steps:solution,
+            nodes
+        };
+    }
+
+    if (hitLimit) {
+        return {
+            success:false,
+            reason:
+                `已搜尋 ${nodes.toLocaleString()} 個節點並達到上限，`+
+                `目前尚未找到解，不能據此證明無解。`
+        };
+    }
+
+    return {
+        success:false,
+        reason:
+            `已完整搜尋 ${nodes.toLocaleString()} 個節點。`+
+            `在目前的容量、顏色相容與擺放規則下，`+
+            `不存在每種勾選骨牌至少一張的完整拼法。`
+    };
+}
+
+function autoSolve(startAnimation=false) {
+    pauseAnimation();
+    document.getElementById("solution-steps").style.display = "none";
+    updateStatus("正在搜尋解答……","info");
+
+    setTimeout(() => {
+        placedPieces = [];
+        render();
+
+        const result = calculateSolution();
+
+        if (!result.success) {
+            computedSolutionSteps = [];
+            render();
+            updateStatus(result.reason,"error");
+            return;
+        }
+
+        computedSolutionSteps = result.steps;
+        currentSolutionIndex = 0;
+        showSolutionSteps(result.steps);
+
+        if (startAnimation) {
+            playAnimation();
+        } else {
+            placedPieces = result.steps.slice();
+            currentSolutionIndex = result.steps.length;
+            render();
+            updateStatus("已找到符合條件的解答。","win");
+        }
+    },50);
+}
+
+/* ---------- 解答步驟 ---------- */
+
+function formatSolutionSteps(steps) {
+    const code = {
+        orange:3,
+        gray:"1/2",
+        blue:1,
+        blue_half:1,
+        purple:1
+    };
+
+    return steps.map((piece,index) => {
+        const definition = PIECE_DEFINITIONS[piece.type];
+
+        if (!definition) {
+            return `${index+1}. 此自訂骨牌已刪除`;
+        }
+
+        const groups = {};
+
+        piece.cells.forEach(cell => {
+            const position = {
+                row:piece.r+cell.dr+1,
+                col:piece.c+cell.dc+1
+            };
+
+            if (!groups[cell.type]) groups[cell.type] = [];
+            groups[cell.type].push(position);
+        });
+
+        Object.values(groups).forEach(group => {
+            group.sort((a,b) => a.row-b.row || a.col-b.col);
+        });
+
+        const values = definition.shape
+            .map(cell => code[cell.type] ?? 1)
+            .join(",");
+
+        const positions = definition.shape.map(cell => {
+            const position = groups[cell.type].shift();
+            return `(${position.row},${position.col})`;
+        }).join("");
+
+        return (
+            `<span style="white-space:nowrap">`+
+            `${index+1}.（${values}）：${positions}</span>`
+        );
+    }).join(' <b aria-label="接著">→</b> ');
+}
+
+function showSolutionSteps(steps) {
+    const container = document.getElementById("solution-steps");
+
+    container.innerHTML =
+        "<b>解答步驟</b><br>"+
+        "座標為（第幾列，第幾行），左上角從 (1,1) 開始。<br>"+
+        formatSolutionSteps(steps);
+
+    container.style.display = "block";
+
+    document.getElementById("capacity-formula").innerHTML =
+        formatCapacityFormula(
+            steps,gridRows,gridCols,forbiddenCells.size
+        );
+}
+
+/* ---------- 容量公式、實際代入與推導 ---------- */
+
+function formatCapacityFormula(
+    pieces,rows,cols,forbiddenCount,
+    enabledTypes=null
+) {
+    const types = [
+        "L_ORG_BLU_ORG",
+        "L_ALL_ORANGE",
+        "L_BLU_ORG_BLU",
+        "L_ALL_BLUE",
+        "L_ORG_ORG_BLU",
+        "L_ORG_BLU_BLU"
+    ];
+
+    const codes = [
+        "3,1,3",
+        "3,3,3",
+        "1,3,1",
+        "1,1,1",
+        "3,3,1",
+        "3,1,1"
+    ];
+
+    const counts = types.map(type =>
+        pieces.filter(piece => piece.type === type).length
+    );
+
+    const [a,b,c,d,e,f] = counts;
+    const A = a+e;
+    const B = c+f;
+    const target = rows*cols-forbiddenCount;
+
+    function unitsOf(piece) {
+        const shape = PIECE_DEFINITIONS[piece.type]?.shape || [];
+        return shape.reduce(
+            (sum,cell) => sum+(TYPE_UNITS[cell.type] || 6),0
+        );
+    }
+
+    const extra = pieces.filter(piece => !types.includes(piece.type));
+    const extraUnits = extra.reduce(
+        (sum,piece) => sum+unitsOf(piece),0
+    );
+
+    const totalUnits = pieces.reduce(
+        (sum,piece) => sum+unitsOf(piece),0
+    );
+
+    const activeTypes = enabledTypes ||
+        Object.keys(PIECE_DEFINITIONS)
+            .filter(type => pieceEnabled[type]);
+
+    const usesOther =
+        activeTypes.some(type => !types.includes(type)) ||
+        extra.length>0;
+
+    const boardTerm = rows === cols && forbiddenCount === 2 ?
+        "n² − 2" :
+        "列數 × 行數 − 禁置格數";
+
+    let html = `
+        <b>容量公式與代入</b><br>
+        棋盤需求：${rows} × ${cols} − ${forbiddenCount}
+        ＝<b>${target} 格</b>。<br>
+        編碼 1 表示 1 格，編碼 3 表示 1/3 格。<br>
+        a～f 表示六種骨牌的使用張數：
+        <div style="display:flex;flex-wrap:wrap;gap:6px 14px">
+    `;
+
+    html += codes.map((code,index) => `
+        <span>
+            ${"abcdef"[index]}：(${code})，
+            目前 ${counts[index]} 張
+        </span>
+    `).join("");
+
+    html += "</div>";
+
+    html += `
+        <b>分數公式：</b><br>
+        (5/3)(a+e) + b + (7/3)(c+f) + 3d
+        ${usesOther ? "＋其他骨牌容量" : ""}
+        ＝${boardTerm}<br>
+
+        <b>全部乘以 3：</b><br>
+        5(a+e) + 3b + 7(c+f) + 9d
+        ${usesOther ? "＋3×其他骨牌容量" : ""}
+        ＝3(${boardTerm})<br>
+
+        <b>目前張數代入：</b><br>
+        5(${a}+${e}) + 3×${b} + 7(${c}+${f}) + 9×${d}
+        ${usesOther ? "＋"+extraUnits+"/2" : ""}
+        ＝${totalUnits/2}<br>
+        目標：3×${target}＝${target*3}。<br>
+    `;
+
+    if (totalUnits === target*6) {
+        html += "<b>總容量剛好相等。</b>";
+    } else {
+        html += (
+            `總容量尚未相等：目前 ${totalUnits}/6 格，`+
+            `目標 ${target} 格。`
+        );
+    }
+
+    if (!usesOther) {
+        html += `
+            <br><b>餘數規律：</b>
+            a+e 與 c+f 除以 3 的餘數必須相同。<br>
+            a+e ≡ c+f (mod 3)。<br>
+            目前兩組張數為 ${A} 與 ${B}，
+            餘數為 ${A%3} 與 ${B%3}。
+        `;
+    }
+
+    const missing = activeTypes.filter(type =>
+        !pieces.some(piece => piece.type === type)
+    );
+
+    const unavailable = pieces.some(piece =>
+        !activeTypes.includes(piece.type)
+    );
+
+    html += "<br>每種勾選骨牌至少一張：";
+
+    if (!activeTypes.length) {
+        html += "尚未勾選骨牌。";
+    } else if (missing.length) {
+        html += `尚有 ${missing.length} 種未使用。`;
+    } else {
+        html += "已符合。";
+    }
+
+    if (unavailable) {
+        html += "<br>注意：目前棋盤含有未勾選的骨牌。";
+    }
+
+    html += `
+        <br><small>
+        公式只能檢查總容量；是否拼成功，仍須確認每格填滿、
+        形狀及重疊規則。勾選的張數須為正整數，
+        未勾選的張數為 0。
+        </small>
+
+        <details>
+            <summary>看一個代入例子</summary>
+            <p>
+                6×6 禁兩格，需要填滿 34 格。<br>
+                使用 9 張 (1,1,1) 與 3 張 (3,1,1)。<br>
+                所以 d＝9、f＝3，其餘為 0。
+            </p>
+            <div class="formula-lines">
+                5(0+0) + 3×0 + 7(0+3) + 9×9<br>
+                ＝21+81<br>
+                ＝102<br>
+                ＝3(6²−2)
+            </div>
+            <p>
+                用原來的容量計算也是：<br>
+                9×3 + 3×(7/3)<br>
+                ＝27+7<br>
+                ＝34 格。
+            </p>
+        </details>
+
+        <details>
+            <summary>
+                為什麼兩組張數除以 3 的餘數要相同？
+            </summary>
+
+            <p>
+                A＝a+e：兩種容量 5/3 骨牌的總張數。<br>
+                B＝c+f：兩種容量 7/3 骨牌的總張數。<br>
+                目前 A＝${A}，B＝${B}。
+            </p>
+
+            <div class="formula-lines">
+                5/3＝2−1/3<br>
+                7/3＝2+1/3<br><br>
+                (5/3)A + (7/3)B<br>
+                ＝(2−1/3)A + (2+1/3)B<br>
+                ＝2A−A/3 + 2B+B/3<br>
+                ＝(2A+2B) + (B/3−A/3)<br>
+                ＝<b>2(A+B) + (B−A)/3</b>
+            </div>
+
+            <p>
+                另外兩種骨牌的整數容量合計為 b+3d。<br>
+                只使用這六種骨牌時：
+            </p>
+
+            <div class="formula-lines">
+                2(A+B) + (B−A)/3 + b + 3d<br>
+                ＝棋盤需求格數
+            </div>
+
+            <p>
+                A、B、b、d 都是整數，
+                棋盤需求格數也是整數。<br>
+                因此 (B−A)/3 必須是整數。<br>
+                也就是 <b>B−A 必須是 3 的倍數</b>。<br>
+                所以 A、B 除以 3 的餘數相同：<br>
+                <b>A ≡ B (mod 3)</b>。
+            </p>
+
+            <p>
+                例一：A＝4、B＝1，兩者都餘 1。<br>
+                4×(5/3)+1×(7/3)＝27/3＝9 格。
+            </p>
+
+            <p>
+                例二：A＝4、B＝2，餘數不同。<br>
+                4×(5/3)+2×(7/3)＝34/3＝11 又 1/3 格。<br>
+                再加整數容量的骨牌，仍不能湊成整數格。
+            </p>
+
+            <small>
+                這項餘數規律適用於只使用上述六種骨牌。
+                若加入灰色或自訂骨牌，須把額外容量一併計算。
+                符合餘數規律仍不保證形狀能排入棋盤。
+            </small>
+        </details>
+    `;
+
+    return html;
+}
+
+/* ---------- 多棋盤平行運算 ---------- */
+
+function stopMultipleBoards() {
+    batchRunId++;
+
+    batchWorkers.forEach(worker => worker.terminate());
+    batchWorkers = [];
+
+    if (batchWorkerUrl) URL.revokeObjectURL(batchWorkerUrl);
+    batchWorkerUrl = null;
+
+    document.getElementById("batch-solve-button").disabled = false;
+    document.getElementById("batch-stop-button").disabled = true;
+
+    document.querySelectorAll(
+        '#batch-results [data-running="true"]'
+    ).forEach(row => {
+        row.textContent = "已停止運算。";
+        row.dataset.running = "false";
+    });
+}
+
+function solveMultipleBoards() {
+    stopMultipleBoards();
+
+    const sizes = Array.from(
+        document.querySelectorAll(".batch-board:checked"),
+        checkbox => Number(checkbox.value)
+    );
+
+    const panel = document.getElementById("batch-results");
+
+    if (!sizes.length) {
+        panel.textContent = "請至少勾選一種棋盤。";
+        return;
+    }
+
+    if (typeof Worker === "undefined") {
+        panel.textContent = "目前瀏覽器不支援平行運算。";
+        return;
+    }
+
+    batchResults = {};
+    const runId = batchRunId;
+    const enabledSnapshot = {...pieceEnabled};
+    const activeSnapshot = Object.keys(PIECE_DEFINITIONS)
+        .filter(type => enabledSnapshot[type]);
+
+    document.getElementById("batch-solve-button").disabled = true;
+    document.getElementById("batch-stop-button").disabled = false;
+    panel.replaceChildren();
+
+    const source = `
+        const PIECE_DEFINITIONS =
+            ${JSON.stringify(PIECE_DEFINITIONS)};
+        const TYPE_UNITS = ${JSON.stringify(TYPE_UNITS)};
+        let pieceEnabled, gridRows, gridCols, forbiddenCells;
+
+        ${getTransformedCells.toString()}
+        ${calculateSolution.toString()}
+
+        self.onmessage = event => {
+            const size = event.data.size;
+            gridRows = gridCols = size;
+            pieceEnabled = event.data.enabled;
+            forbiddenCells = new Set([
+                "0,0",
+                (size-1)+","+(size-1)
+            ]);
+
+            try {
+                self.postMessage({
+                    size,
+                    result:calculateSolution()
+                });
+            } catch (error) {
+                self.postMessage({
+                    size,
+                    error:String(error)
+                });
+            }
+        };
+    `;
+
+    const url = URL.createObjectURL(
+        new Blob([source],{type:"text/javascript"})
+    );
+    batchWorkerUrl = url;
+
+    let pending = sizes.length;
+
+    function finish() {
+        pending--;
+
+        if (pending === 0) {
+            document.getElementById("batch-solve-button")
+                .disabled = false;
+
+            document.getElementById("batch-stop-button")
+                .disabled = true;
+
+            URL.revokeObjectURL(url);
+            batchWorkerUrl = null;
+            batchWorkers = [];
+        }
+    }
+
+    sizes.forEach(size => {
+        const row = document.createElement("div");
+        row.className = "batch-result";
+        row.dataset.running = "true";
+        row.textContent = `${size}×${size}：運算中……`;
+        panel.appendChild(row);
+
+        let worker;
+
+        try {
+            worker = new Worker(url);
+        } catch (error) {
+            row.dataset.running = "false";
+            row.textContent =
+                `${size}×${size}：無法啟動運算程序。`;
+            finish();
+            return;
+        }
+
+        batchWorkers.push(worker);
+
+        worker.onmessage = event => {
+            if (runId !== batchRunId) return;
+
+            worker.terminate();
+            row.dataset.running = "false";
+
+            const {result,error} = event.data;
+
+            if (error) {
+                row.textContent =
+                    `${size}×${size}：運算錯誤：${error}`;
+            } else if (result.success) {
+                batchResults[size] = {
+                    steps:result.steps,
+                    enabledTypes:activeSnapshot.slice()
+                };
+
+                row.innerHTML =
+                    `<b>${size}×${size}：找到解，`+
+                    `共 ${result.steps.length} 張骨牌。</b> `;
+
+                const button = document.createElement("button");
+                button.textContent = "在棋盤顯示";
+                button.onclick = () => showBatchBoard(size);
+                row.appendChild(button);
+
+                const details = document.createElement("details");
+                details.innerHTML =
+                    "<summary>展開步驟與公式代入</summary>"+
+                    '<div style="line-height:2">'+
+                    formatSolutionSteps(result.steps)+
+                    "</div>"+
+                    formatCapacityFormula(
+                        result.steps,size,size,2,activeSnapshot
+                    );
+
+                row.appendChild(details);
+            } else {
+                row.textContent =
+                    `${size}×${size}：${result.reason}`;
+            }
+
+            finish();
+        };
+
+        worker.onerror = () => {
+            if (runId !== batchRunId) return;
+
+            worker.terminate();
+            row.dataset.running = "false";
+            row.textContent =
+                `${size}×${size}：運算程序發生錯誤。`;
+
+            finish();
+        };
+
+        worker.postMessage({
+            size,
+            enabled:enabledSnapshot
+        });
+    });
+}
+
+function showBatchBoard(size) {
+    const result = batchResults[size];
+    if (!result) return;
+
+    const select = document.getElementById("level-select");
+    select.value = size === 6 ?
+        "6x6_classic" : `${size}x${size}_corners`;
+
+    changeLevel();
+
+    computedSolutionSteps = result.steps;
+    placedPieces = result.steps.slice();
+    currentSolutionIndex = result.steps.length;
+
+    render();
+    showSolutionSteps(result.steps);
+
+    document.getElementById("capacity-formula").innerHTML =
+        formatCapacityFormula(
+            result.steps,size,size,2,result.enabledTypes
+        );
+
+    updateStatus(
+        `已顯示 ${size}×${size} 的求解結果。`,
+        "win"
+    );
+}
+
+/* ---------- 動畫播放 ---------- */
+
+function pauseAnimation() {
+    if (animTimer !== null) {
+        clearInterval(animTimer);
+        animTimer = null;
+    }
+}
+
+function playAnimation() {
+    pauseAnimation();
+
+    if (!computedSolutionSteps.length) {
+        autoSolve(true);
+        return;
+    }
+
+    if (currentSolutionIndex>=computedSolutionSteps.length) {
+        currentSolutionIndex = 0;
+        placedPieces = [];
+        render();
+    }
+
+    animTimer = setInterval(() => {
+        if (currentSolutionIndex<computedSolutionSteps.length) {
+            currentSolutionIndex++;
+            placedPieces = computedSolutionSteps.slice(
+                0,currentSolutionIndex
+            );
+
+            render();
+            updateStatus(
+                `動畫展示：第 ${currentSolutionIndex}／`+
+                `${computedSolutionSteps.length} 步`,
+                "info"
+            );
+        } else {
+            pauseAnimation();
+            checkWinCondition();
+        }
+    },400);
+}
+
+function stepNext() {
+    pauseAnimation();
+
+    if (!computedSolutionSteps.length) {
+        autoSolve(false);
+        return;
+    }
+
+    if (currentSolutionIndex<computedSolutionSteps.length) {
+        currentSolutionIndex++;
+        placedPieces = computedSolutionSteps.slice(
+            0,currentSolutionIndex
+        );
+
+        render();
+
+        if (currentSolutionIndex === computedSolutionSteps.length) {
+            checkWinCondition();
+        } else {
+            updateStatus(
+                `第 ${currentSolutionIndex}／`+
+                `${computedSolutionSteps.length} 步`,
+                "info"
+            );
+        }
+    }
+}
+
+function stepPrev() {
+    pauseAnimation();
+
+    if (computedSolutionSteps.length && currentSolutionIndex>0) {
+        currentSolutionIndex--;
+        placedPieces = computedSolutionSteps.slice(
+            0,currentSolutionIndex
+        );
+
+        render();
+        updateStatus(
+            `第 ${currentSolutionIndex}／`+
+            `${computedSolutionSteps.length} 步`,
+            "info"
+        );
+    }
+}
+
+/* ---------- 手動放置與覆蓋計算 ---------- */
+
+function findPieceAt(r,c) {
+    for (let index=placedPieces.length-1;index>=0;index--) {
+        const piece = placedPieces[index];
+
+        if (piece.cells.some(cell =>
+            piece.r+cell.dr === r && piece.c+cell.dc === c
+        )) {
+            return index;
+        }
+    }
+    return -1;
+}
+
+function attemptPlacePiece(r,c) {
+    const cells = getTransformedCells(
+        selectedType,currentRotation,isFlipped
+    );
+
+    for (const cell of cells) {
+        const tr = r+cell.dr;
+        const tc = c+cell.dc;
+
+        if (tr<0 || tc<0 || tr>=gridRows || tc>=gridCols) {
+            updateStatus("無法放置：骨牌超出棋盤。","error");
+            return;
+        }
+
+        if (forbiddenCells.has(tr+","+tc)) {
+            updateStatus("無法放置：骨牌碰到禁置格。","error");
+            return;
+        }
+    }
+
+    placedPieces.push({
+        id:Date.now()+Math.random(),
+        type:selectedType,
+        r,c,
+        rotation:currentRotation,
+        flipped:isFlipped,
+        cells
+    });
+
+    computedSolutionSteps = [];
+    document.getElementById("solution-steps").style.display = "none";
+    render();
+    checkWinCondition();
+}
+
+function computeCoverage() {
+    const coverage = {};
+
+    for (let r=0;r<gridRows;r++) {
+        for (let c=0;c<gridCols;c++) {
+            coverage[r+","+c] = {
+                units:0,
+                types:[],
+                colors:[]
+            };
+        }
+    }
+
+    placedPieces.forEach(piece => {
+        piece.cells.forEach(cell => {
+            const r = piece.r+cell.dr;
+            const c = piece.c+cell.dc;
+            const data = coverage[r+","+c];
+
+            if (!data) return;
+
+            data.units += TYPE_UNITS[cell.type] || 6;
+            data.types.push(cell.type);
+            data.colors.push(
+                cell.type === "blue_half" ? "blue" : cell.type
+            );
+        });
+    });
+
+    return coverage;
+}
+
+function isCellConflict(data) {
+    if (data.units>6) return true;
+    if (data.types.length<=1) return false;
+
+    const first = data.types[0];
+
+    if (first === "blue" ||
+        first === "blue_half" ||
+        first === "purple") {
+        return true;
+    }
+
+    return data.types.some(type =>
+        (first === "gray" && type !== "gray") ||
+        (first === "orange" && type !== "orange")
+    );
+}
+
+function checkWinCondition() {
+    const coverage = computeCoverage();
+    let total = 0;
+    let complete = 0;
+    let hasError = false;
+
+    for (let r=0;r<gridRows;r++) {
+        for (let c=0;c<gridCols;c++) {
+            const key = r+","+c;
+            if (forbiddenCells.has(key)) continue;
+
+            total++;
+            const data = coverage[key];
+
+            if (isCellConflict(data)) {
+                hasError = true;
+            } else if (data.units === 6) {
+                complete++;
+            }
+        }
+    }
+
+    if (hasError) {
+        updateStatus(
+            "棋盤有過度覆蓋或不相容顏色混合的格子。",
+            "error"
+        );
+    } else if (total>0 && complete === total) {
+        updateStatus("所有有效格子都已填滿。","win");
+    } else {
+        updateStatus(
+            `進度：${complete}／${total} 格已填滿。`,
+            "info"
+        );
+    }
+}
+
+/* ---------- 平面繪圖 ---------- */
+
+function render() {
+    document.getElementById("capacity-formula").innerHTML =
+        formatCapacityFormula(
+            placedPieces,gridRows,gridCols,forbiddenCells.size
+        );
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    if (is3DMode) render3D();
+    else render2D();
+}
+
+function render2D() {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    for (let r=0;r<gridRows;r++) {
+        for (let c=0;c<gridCols;c++) {
+            const x = c*CELL_SIZE;
+            const y = r*CELL_SIZE;
+
+            ctx.strokeStyle = "#222";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x,y,CELL_SIZE,CELL_SIZE);
+
+            if (forbiddenCells.has(r+","+c)) {
+                drawForbiddenX2D(x,y);
+            } else {
+                ctx.strokeStyle = "#e2e8f0";
+                ctx.strokeRect(
+                    x+4,y+4,CELL_SIZE-8,CELL_SIZE-8
+                );
+            }
+        }
+    }
+
+    const coverage = computeCoverage();
+
+    for (let r=0;r<gridRows;r++) {
+        for (let c=0;c<gridCols;c++) {
+            if (forbiddenCells.has(r+","+c)) continue;
+
+            const data = coverage[r+","+c];
+            if (!data.units) continue;
+
+            const margin = Math.max(3,Math.floor(CELL_SIZE*.11));
+            const size = CELL_SIZE-margin*2;
+            const x = c*CELL_SIZE+margin;
+            const y = r*CELL_SIZE+margin;
+
+            if (isCellConflict(data)) {
+                ctx.fillStyle = "#ffd1d1";
+                ctx.fillRect(x,y,size,size);
+                ctx.strokeStyle = "#d90429";
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x,y,size,size);
+
+                ctx.fillStyle = "#d90429";
+                ctx.font = `bold ${Math.floor(CELL_SIZE*.35)}px sans-serif`;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("!",x+size/2,y+size/2);
+            } else {
+                const color = COLOR_MAP[data.colors[0]];
+                ctx.fillStyle = color;
+
+                if (data.units<6) {
+                    ctx.globalAlpha = .35+(data.units/6)*.5;
+                }
+
+                ctx.fillRect(x,y,size,size);
+                ctx.globalAlpha = 1;
+
+                if (data.units<6) {
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(x,y,size,size);
+                }
+            }
+        }
+    }
+
+    placedPieces.forEach(drawPieceConnectors2D);
+
+    if (hoveredCell) {
+        drawGhostPreview2D(hoveredCell.r,hoveredCell.c);
+    }
+}
+
+function drawForbiddenX2D(x,y) {
+    const margin = Math.floor(CELL_SIZE*.22);
+    ctx.strokeStyle = "#d90429";
+    ctx.lineWidth = Math.max(2,Math.floor(CELL_SIZE/18));
+    ctx.lineCap = "round";
+
+    ctx.beginPath();
+    ctx.moveTo(x+margin,y+margin);
+    ctx.lineTo(x+CELL_SIZE-margin,y+CELL_SIZE-margin);
+    ctx.moveTo(x+CELL_SIZE-margin,y+margin);
+    ctx.lineTo(x+margin,y+CELL_SIZE-margin);
+    ctx.stroke();
+}
+
+function drawPieceConnectors2D(piece) {
+    const cells = piece.cells;
+
+    for (let i=0;i<cells.length;i++) {
+        for (let j=i+1;j<cells.length;j++) {
+            const first = cells[i];
+            const second = cells[j];
+            const dr = Math.abs(first.dr-second.dr);
+            const dc = Math.abs(first.dc-second.dc);
+
+            if (dr+dc !== 1) continue;
+
+            const x1 = (piece.c+first.dc)*CELL_SIZE+CELL_SIZE/2;
+            const y1 = (piece.r+first.dr)*CELL_SIZE+CELL_SIZE/2;
+            const x2 = (piece.c+second.dc)*CELL_SIZE+CELL_SIZE/2;
+            const y2 = (piece.r+second.dr)*CELL_SIZE+CELL_SIZE/2;
+
+            const width = Math.max(6,Math.floor(CELL_SIZE*.18));
+            const height = Math.max(8,Math.floor(CELL_SIZE*.22));
+
+            ctx.fillStyle = COLOR_MAP[first.type];
+
+            if (dr === 1) {
+                ctx.fillRect(
+                    x1-width/2,(y1+y2)/2-height/2,width,height
+                );
+            } else {
+                ctx.fillRect(
+                    (x1+x2)/2-height/2,y1-width/2,height,width
+                );
+            }
+        }
+    }
+}
+
+function ghostCells(r,c) {
+    const cells = getTransformedCells(
+        selectedType,currentRotation,isFlipped
+    );
+
+    const valid = cells.every(cell => {
+        const tr = r+cell.dr;
+        const tc = c+cell.dc;
+
+        return tr>=0 && tc>=0 &&
+               tr<gridRows && tc<gridCols &&
+               !forbiddenCells.has(tr+","+tc);
+    });
+
+    return {cells,valid};
+}
+
+function drawGhostPreview2D(r,c) {
+    const {cells,valid} = ghostCells(r,c);
+    const margin = Math.max(3,Math.floor(CELL_SIZE*.08));
+
+    ctx.globalAlpha = .45;
+    ctx.fillStyle = valid ? "#48bb78" : "#f56565";
+
+    cells.forEach(cell => {
+        const tr = r+cell.dr;
+        const tc = c+cell.dc;
+
+        if (tr>=0 && tc>=0 && tr<gridRows && tc<gridCols) {
+            ctx.fillRect(
+                tc*CELL_SIZE+margin,
+                tr*CELL_SIZE+margin,
+                CELL_SIZE-margin*2,
+                CELL_SIZE-margin*2
+            );
+        }
+    });
+
+    ctx.globalAlpha = 1;
+}
+
+/* ---------- 3D 投影與繪圖 ---------- */
+
+function toggle3DMode() {
+    is3DMode = !is3DMode;
+
+    document.getElementById("btn-toggle-3d").textContent =
+        is3DMode ? "切換平面 2D" : "切換 3D 模式";
+
+    document.getElementById("view-mode-text").textContent =
+        is3DMode ? "立體 3D（拖曳旋轉）" : "平面 2D";
+
+    canvas.classList.toggle("mode-3d-cursor",is3DMode);
+    resizeCanvas();
+    render();
+}
+
+function project3D(r,c,z=0) {
+    const centerR = (gridRows-1)/2;
+    const centerC = (gridCols-1)/2;
+    const scale = CELL_SIZE*1.1;
+
+    const dx = (c-centerC)*scale;
+    const dy = (r-centerR)*scale;
+    const dz = z*scale*.75;
+
+    const x1 = dx*Math.cos(viewAngleZ)-dy*Math.sin(viewAngleZ);
+    const y1 = dx*Math.sin(viewAngleZ)+dy*Math.cos(viewAngleZ);
+
+    const y2 = y1*Math.cos(viewAngleX)-dz*Math.sin(viewAngleX);
+    const depth = y1*Math.sin(viewAngleX)+dz*Math.cos(viewAngleX);
+
+    return {
+        x:canvas.width/2+x1,
+        y:canvas.height/2+y2+10,
+        depth
+    };
+}
+
+function isPolygonFrontFacing(points) {
+    let area = 0;
+
+    for (let i=0;i<points.length;i++) {
+        const first = points[i];
+        const second = points[(i+1)%points.length];
+        area += (second.x-first.x)*(second.y+first.y);
+    }
+
+    return area<0;
+}
+
+function drawPolygon(points,fill,stroke=null) {
+    ctx.beginPath();
+    ctx.moveTo(points[0].x,points[0].y);
+
+    for (let i=1;i<points.length;i++) {
+        ctx.lineTo(points[i].x,points[i].y);
+    }
+
+    ctx.closePath();
+    ctx.fillStyle = fill;
+    ctx.fill();
+
+    if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+}
+
+function screenToGrid3D(x,y) {
+    let distance = Infinity;
+    let result = null;
+
+    for (let r=0;r<gridRows;r++) {
+        for (let c=0;c<gridCols;c++) {
+            const point = project3D(r,c,0);
+            const current = Math.hypot(x-point.x,y-point.y);
+
+            if (current<distance && current<CELL_SIZE*1.2) {
+                distance = current;
+                result = {r,c};
+            }
+        }
+    }
+
+    return result;
+}
+
+function render3D() {
+    const gradient = ctx.createLinearGradient(
+        0,0,0,canvas.height
+    );
+    gradient.addColorStop(0,"#f1f5f9");
+    gradient.addColorStop(1,"#e2e8f0");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    const coverage = computeCoverage();
+    const cells = [];
+
+    for (let r=0;r<gridRows;r++) {
+        for (let c=0;c<gridCols;c++) {
+            cells.push({
+                r,c,
+                depth:project3D(r,c,0).depth
+            });
+        }
+    }
+
+    cells.sort((a,b) => a.depth-b.depth);
+
+    cells.forEach(({r,c}) => {
+        const forbidden = forbiddenCells.has(r+","+c);
+
+        drawIsoTile3D(
+            r,c,
+            forbidden ? "#ffe5e5" : "#ffffff",
+            "#cbd5e1"
+        );
+
+        if (forbidden) {
+            drawForbiddenX3D(r,c);
+            return;
+        }
+
+        const data = coverage[r+","+c];
+        if (!data.units) return;
+
+        if (isCellConflict(data)) {
+            drawIsoCube3D(r,c,0,1,"error");
+        } else {
+            const first = data.colors[0];
+            const type = first === "purple" ? "purple" :
+                         first === "orange" ? "orange" :
+                         first === "gray" ? "gray" : "blue";
+
+            drawIsoCube3D(r,c,0,data.units/6,type);
+        }
+    });
+
+    if (hoveredCell) {
+        drawGhostPreview3D(hoveredCell.r,hoveredCell.c);
+    }
+}
+
+function drawIsoTile3D(r,c,fill,stroke) {
+    const size = .46;
+
+    drawPolygon([
+        project3D(r-size,c-size,0),
+        project3D(r-size,c+size,0),
+        project3D(r+size,c+size,0),
+        project3D(r+size,c-size,0)
+    ],fill,stroke);
+}
+
+function drawForbiddenX3D(r,c) {
+    const p1 = project3D(r-.3,c-.3,.05);
+    const p2 = project3D(r+.3,c+.3,.05);
+    const p3 = project3D(r-.3,c+.3,.05);
+    const p4 = project3D(r+.3,c-.3,.05);
+
+    ctx.strokeStyle = "#e53e3e";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(p1.x,p1.y);
+    ctx.lineTo(p2.x,p2.y);
+    ctx.moveTo(p3.x,p3.y);
+    ctx.lineTo(p4.x,p4.y);
+    ctx.stroke();
+}
+
+function drawIsoCube3D(r,c,startZ,height,colorType) {
+    const size = .44;
+
+    const bottom = [
+        project3D(r-size,c-size,startZ),
+        project3D(r-size,c+size,startZ),
+        project3D(r+size,c+size,startZ),
+        project3D(r+size,c-size,startZ)
+    ];
+
+    const top = [
+        project3D(r-size,c-size,startZ+height),
+        project3D(r-size,c+size,startZ+height),
+        project3D(r+size,c+size,startZ+height),
+        project3D(r+size,c-size,startZ+height)
+    ];
+
+    const shades = COLOR_3D[colorType] || COLOR_3D.blue;
+
+    if (isPolygonFrontFacing(top)) {
+        drawPolygon(top,shades.top,"rgba(255,255,255,.4)");
+    }
+
+    const sides = [
+        [bottom[0],bottom[1],top[1],top[0]],
+        [bottom[1],bottom[2],top[2],top[1]],
+        [bottom[2],bottom[3],top[3],top[2]],
+        [bottom[3],bottom[0],top[0],top[3]]
+    ];
+
+    sides.forEach((points,index) => {
+        if (isPolygonFrontFacing(points)) {
+            drawPolygon(
+                points,
+                index%2 === 0 ? shades.left : shades.right,
+                "rgba(0,0,0,.15)"
+            );
+        }
+    });
+}
+
+function drawGhostPreview3D(r,c) {
+    const {cells,valid} = ghostCells(r,c);
+    ctx.globalAlpha = .55;
+
+    cells.forEach(cell => {
+        const tr = r+cell.dr;
+        const tc = c+cell.dc;
+
+        if (tr>=0 && tc>=0 && tr<gridRows && tc<gridCols) {
+            drawIsoCube3D(
+                tr,tc,0,.8,valid ? "blue" : "error"
+            );
+        }
+    });
+
+    ctx.globalAlpha = 1;
+}
+
+/* ---------- 滑鼠與鍵盤 ---------- */
+
+function setupEventListeners() {
+    canvas.addEventListener("mousedown",event => {
+        if (event.button !== 0) return;
+
+        if (is3DMode) {
+            isDragging3D = true;
+            dragStartMouse = {
+                x:event.clientX,
+                y:event.clientY
+            };
+            dragMovedDistance = 0;
+        }
+    });
+
+    window.addEventListener("mousemove",event => {
+        if (is3DMode && isDragging3D) {
+            const dx = event.clientX-dragStartMouse.x;
+            const dy = event.clientY-dragStartMouse.y;
+
+            dragMovedDistance += Math.hypot(dx,dy);
+            viewAngleZ += dx*.008;
+            viewAngleX += dy*.008;
+            viewAngleX = Math.max(
+                .08,Math.min(Math.PI/2-.05,viewAngleX)
+            );
+
+            dragStartMouse = {
+                x:event.clientX,
+                y:event.clientY
+            };
+
+            render();
+            return;
+        }
+
+        const rectangle = canvas.getBoundingClientRect();
+
+        const x = (event.clientX-rectangle.left) *
+                  canvas.width/rectangle.width;
+
+        const y = (event.clientY-rectangle.top) *
+                  canvas.height/rectangle.height;
+
+        if (x<0 || y<0 || x>=canvas.width || y>=canvas.height) {
+            hoveredCell = null;
+        } else if (is3DMode) {
+            hoveredCell = screenToGrid3D(x,y);
+        } else {
+            const r = Math.floor(y/CELL_SIZE);
+            const c = Math.floor(x/CELL_SIZE);
+
+            hoveredCell = r>=0 && c>=0 &&
+                          r<gridRows && c<gridCols ?
+                          {r,c} : null;
+        }
+
+        render();
+    });
+
+    window.addEventListener("mouseup",() => {
+        isDragging3D = false;
+    });
+
+    canvas.addEventListener("mouseleave",() => {
+        hoveredCell = null;
+        render();
+    });
+
+    canvas.addEventListener("click",event => {
+        if (event.button !== 0) return;
+        if (is3DMode && dragMovedDistance>5) return;
+        if (!hoveredCell) return;
+
+        pauseAnimation();
+        attemptPlacePiece(hoveredCell.r,hoveredCell.c);
+    });
+
+    canvas.addEventListener("contextmenu",event => {
+        event.preventDefault();
+        pauseAnimation();
+        if (!hoveredCell) return;
+
+        const index = findPieceAt(
+            hoveredCell.r,hoveredCell.c
+        );
+
+        if (index>=0) {
+            placedPieces.splice(index,1);
+            computedSolutionSteps = [];
+            document.getElementById("solution-steps")
+                .style.display = "none";
+
+            render();
+            checkWinCondition();
+        } else {
+            rotatePieceAction();
+        }
+    });
+
+    window.addEventListener("keydown",event => {
+        const tag = event.target.tagName;
+
+        if (tag === "INPUT" ||
+            tag === "TEXTAREA" ||
+            tag === "SELECT" ||
+            event.target.isContentEditable) {
+            return;
+        }
+
+        const key = event.key.toLowerCase();
+
+        if ((event.ctrlKey || event.metaKey) && key === "z") {
+            event.preventDefault();
+            undoLastMove();
+        } else if (key === "r" || event.key === " ") {
+            event.preventDefault();
+            rotatePieceAction();
+        } else if (key === "f") {
+            toggleFlipAction();
+        } else if (event.key === "ArrowUp" ||
+                   event.key === "ArrowDown") {
+            event.preventDefault();
+            if (!hoveredCell) return;
+
+            pauseAnimation();
+
+            const {r,c} = hoveredCell;
+            const cellKey = r+","+c;
+
+            if (event.key === "ArrowUp") {
+                forbiddenCells.add(cellKey);
+
+                placedPieces = placedPieces.filter(piece =>
+                    !piece.cells.some(cell =>
+                        piece.r+cell.dr === r &&
+                        piece.c+cell.dc === c
+                    )
+                );
+            } else {
+                forbiddenCells.delete(cellKey);
+            }
+
+            computedSolutionSteps = [];
+            document.getElementById("solution-steps")
+                .style.display = "none";
+
+            render();
+            checkWinCondition();
+        }
+    });
+}
+
+function updateStatus(message,type) {
+    const container = document.getElementById("status-msg");
+    container.textContent = message;
+    container.className = "status-msg " + type;
+}
+
+/* ---------- 啟動 ---------- */
+
+window.onload = () => {
+    initPresetOptions();
+    initCreatorGrid();
+    renderPreviews();
+    changeLevel();
+    setupEventListeners();
+};
+</script>
+</body>
+</html>
